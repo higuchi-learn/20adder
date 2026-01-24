@@ -1,0 +1,8 @@
+#line 1 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\.vscode\\arduino.json"
+{
+    "configuration": "mode=off",
+    "board": "arduino:megaavr:nona4809",
+    "port": "COM7",
+    "output": "./build",
+    "sketch": "20adder.ino"
+}

@@ -1,0 +1,7 @@
+{
+    "configuration": "mode=off",
+    "board": "arduino:megaavr:nona4809",
+    "port": "COM7",
+    "output": "./build",
+    "sketch": "20adder.ino"
+}

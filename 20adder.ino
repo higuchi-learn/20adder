@@ -35,11 +35,6 @@ struct segments
 
 void setup()
 {
-  Serial.begin(115200);
-  while (!Serial)
-  {
-    ; // Nano Every（USB CDC）では安定のため待つ
-  }
   pinMode(PIN_A, OUTPUT);
   pinMode(PIN_D, OUTPUT);
   pinMode(PIN_C, OUTPUT);

@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #line 1 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
 // 20adder.ino
-// 2^20 + 2^20 の計算結果を4桁7セグ×2に表示させるためのプログラム
+// 2^23 + 2^23 -1 までの計算結果を4桁7セグ×2に表示させるためのプログラム
 
 // ピン番号, 用途の定義
 constexpr uint8_t PIN_A = 6;
@@ -37,28 +37,21 @@ struct segments
 
 #line 36 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
 void setup();
-#line 62 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
+#line 57 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
 void clk_rising();
-#line 69 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
+#line 64 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
 uint32_t read_data();
-#line 90 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
-uint32_t reverse_bits(uint32_t val);
-#line 105 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
+#line 86 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
 uint8_t digits10(uint32_t val);
-#line 127 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
+#line 108 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
 segments pullout_digit(uint32_t val, uint8_t digits_length);
-#line 145 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
+#line 126 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
 void display(const segments &digits, uint8_t digits_length);
-#line 173 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
+#line 155 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
 void loop();
 #line 36 "C:\\Users\\user1\\Documents\\Arduino\\20adder\\20adder.ino"
 void setup()
 {
-  Serial.begin(115200);
-  while (!Serial)
-  {
-    ; // Nano Every（USB CDC）では安定のため待つ
-  }
   pinMode(PIN_A, OUTPUT);
   pinMode(PIN_D, OUTPUT);
   pinMode(PIN_C, OUTPUT);
@@ -95,6 +88,7 @@ uint32_t read_data()
   digitalWrite(PIN_SL, HIGH);
 
   // 24bitの読みとり
+  // 74HC165の出力はMLB→LSBで行われる
   for (uint8_t i = 0; i < length; i++)
   {
     val <<= 1;                         // 1bit左シフト
@@ -103,21 +97,6 @@ uint32_t read_data()
   }
 
   return val;
-}
-
-// ビット列の上下を反転
-uint32_t reverse_bits(uint32_t val)
-{
-  uint32_t result = 0;
-
-  for (uint8_t i = 0; i < length; i++)
-  {
-    result <<= 1;                // 1bit左シフト
-    result = result | (val & 1); // 入力データのMLBを代入
-    val >>= 1;                   // 1bit右シフト
-  }
-
-  return result;
 }
 
 // 桁数を求める
@@ -160,7 +139,7 @@ segments pullout_digit(uint32_t val, uint8_t digits_length)
 }
 
 // ダイナミック点灯で表示
-// segments& は参照渡し(そのまま渡すとコピーになってメモリ消費エグい)
+// segments& は参照渡し(そのまま渡すとコピーになってメモリ消費が大きくなる)
 void display(const segments &digits, uint8_t digits_length)
 {
   uint8_t number;
@@ -175,6 +154,7 @@ void display(const segments &digits, uint8_t digits_length)
     illuminate_digits = digit_pins[i];
     digitalWrite(illuminate_digits, HIGH);
     delayMicroseconds(100);
+    // なぜか出力ピンをリセットしてあげないと次の出力に影響が出るパターン有り
     digitalWrite(PIN_A, LOW);
     digitalWrite(PIN_B, LOW);
     digitalWrite(PIN_C, LOW);
@@ -182,7 +162,7 @@ void display(const segments &digits, uint8_t digits_length)
     digitalWrite(illuminate_digits, LOW);
   }
 
-  // 上位桁が0であった場合は表示しないが, 明るさは一定にする
+  // 上位桁が0であった場合は表示しないが, 明るさは一定にするため, 周期を合わせる
   for (uint8_t i = digits_length; i < segments_length; i++)
   {
     delayMicroseconds(100);
@@ -196,32 +176,8 @@ void loop()
   segments output_digits;
   uint8_t digits_length;
   input_bits = read_data();
-  // output_bits = reverse_bits(input_bits);
   digits_length = digits10(input_bits);
   output_digits = pullout_digit(input_bits, digits_length);
-  // debug
-
-  // ===== シリアルモニター表示 =====
-  Serial.print("input_bits  = ");
-  Serial.println(input_bits, BIN);
-
-  Serial.print("output_bits = ");
-  Serial.println(output_bits, BIN);
-
-  Serial.print("output_dec  = ");
-  Serial.println(output_bits);
-
-  Serial.print("digits_len  = ");
-  Serial.println(digits_length);
-
-  Serial.print("digits      = ");
-  for (uint8_t i = 0; i < digits_length; i++)
-  {
-    Serial.print(output_digits.segment[i]);
-    Serial.print(" ");
-  }
-  Serial.println();
-  Serial.println("--------------------");
 
   display(output_digits, digits_length);
 }
